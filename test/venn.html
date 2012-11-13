@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Raphael Venn Chart</title>
+  <script src="../raphael-min.js" type="text/javascript"></script>
+  <script src="../g.raphael.js" type="text/javascript"></script>
+  <script src="../g.venn.js" type="text/javascript"></script>
+  <script type="text/javascript">
+    window.onload = function () {
+        var r = Raphael("holder"),
+        venn = r.venn(125, 125, 200, 200, {cardinalities: [20, 30], overlaps: [8]},
+            {gradients: ["45-#c00-#f55", "45-#0c0-#5f5", "45-#c00-#5f5"], strokewidth: 1});
+    };
+  </script>
+</head>
+<body class="raphael">
+<div id="holder"></div>
+</body>
+</html>
