@@ -24,6 +24,10 @@
  = (object) path element of the popup
  \*/
 Raphael.el.popup = function (dir, size, x, y) {
+    //debugger;
+    console.log('ar1',arguments);
+    console.log('this',this);
+    console.log('other',dir,size, x,y);
     var paper = this.paper || this[0].paper,
         bb, xy, center, cw, ch;
 
@@ -39,6 +43,7 @@ Raphael.el.popup = function (dir, size, x, y) {
     dir = dir == null ? 'up' : dir;
     size = size || 5;
     bb = this.getBBox();
+    console.log(bb);
 
     x = typeof x == 'number' ? x : (center ? bb.x + bb.width / 2 : bb.x);
     y = typeof y == 'number' ? y : (center ? bb.y + bb.height / 2 : bb.y);
