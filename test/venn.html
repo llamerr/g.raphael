@@ -3,18 +3,23 @@
 <head>
   <meta charset="utf-8">
   <title>Raphael Venn Chart</title>
-  <script src="../raphael-min.js" type="text/javascript"></script>
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js" type="text/javascript"></script>
+  <script src="../raphael.js" type="text/javascript"></script>
   <script src="../g.raphael.js" type="text/javascript"></script>
   <script src="../g.venn.js" type="text/javascript"></script>
   <script type="text/javascript">
-    window.onload = function () {
-        var r = Raphael("holder"),
-        venn = r.venn(125, 125, 200, 200, {cardinalities: [20, 30], overlaps: [8]},
-            {gradients: ["45-#c00-#f55", "45-#0c0-#5f5", "45-#c00-#5f5"], strokewidth: 1});
-    };
+    $(document).ready(function () {
+
+        var r = Raphael("holder",800,600);
+        venn = r.vennchart(50, 20, 600, 400, { values: [13,28,20] }, {overlaps : [[0.5,0.5],[0.5]]});
+        jQuery(r.canvas).mousemove(venn.mousemove);
+
+    });
   </script>
 </head>
 <body class="raphael">
+<h1>TEST</h1>
+<p>asdfasdf asdf asdf asdf asdfasdf</p>
 <div id="holder"></div>
 </body>
 </html>

@@ -11,148 +11,204 @@
 
 (function () {
 
-    function Venn(paper, cx, cy, width, height, values, opts) {
+    /**
+     *
+     * @param paper
+     * @param cx
+     * @param cy
+     * @param width
+     * @param height
+     * @param values { values : [a,b], overlaps : [ab] }
+     * @param opts { colors : [a,b], opacity : [a,b] }
+     * @return {*}
+     * @constructor
+     */
+    function VennChart(paper, cx, cy, width, height, values, opts) {
+        /** CHECK VALUES AND OPTS **/
+        //[ [12] ]
+        //[ [12, 13], [23] ]
+        //[ [12, 13, 14], [23, 24], [34] ]
+        if (typeof values.overlaps == 'undefined') {
+            values.overlaps = [];
+            for (var i = 0; i < values.values.length-1; i++) {
+                values.overlaps[i] = [];
+                for (var j = i+1; j < values.values.length; j++) {
+                    values.overlaps[i][j-i-1] = 0.5;
+                }
+            }
+        }
+        //console.log(values.overlaps);
         opts = opts || {};
+        if (typeof opts.scaledown == 'undefined') opts.scaledown = true;
+        if (typeof opts.scaleup == 'undefined') opts.scaleup = true;
+        if (typeof opts.hoverscalesize == 'undefined') opts.hoverscalesize = 10;
+        //set colors if not set
+        if (typeof opts.colors == 'undefined' || opts.colors.length < values.values.length) {
+            if (typeof opts.colors == 'undefined') opts.colors = [];
+            for ( var i = 0; i < values.values.length; i++) {
+                if (typeof opts.colors[i] == 'undefined') opts.colors[i] = Raphael.getColor();
+            }
+        }
+        //set opacity if not set
+        if (typeof opts.opacity == 'undefined' || opts.opacity.length < values.values.length) {
+            if (typeof opts.opacity == 'undefined') opts.opacity = [];
+            for ( var i = 0; i < values.values.length; i++) {
+                if (typeof opts.opacity[i] == 'undefined') opts.opacity[i] = 0.75;
+            }
+        }
+
+        /** BUILD CONFIGURATION **/
+        //[ [x,y], [angle,overlap], [angle,overlap], ... ] - x,y here is relative percent of paper
+        var conf;
+        if (typeof opts.conf != 'undefined') {
+            conf = opts.conf;
+        } else {
+            conf = [];
+            //place at the center of the paper
+            if (values.values.length == 1) {
+                conf.push([width / 2, height / 2]);
+            }
+            //place one next to other
+            else if (values.values.length == 2) {
+                var s = values.values[0] > values.values[1] ? 1 : 0;
+
+                var maxh = Math.max.apply(Math, values.values);
+                var maxw = values.values[0] + values.values[1] - values.values[s] * values.overlaps[0][0];
+            } else if (values.values.length == 3) {
+                throw { message : 'Not implemented yet.' }
+            } else {
+                throw { message : 'You must pass conf for charts with more then 3 areas.' }
+            }
+        }
+
+        //calculate width and height of configuration
+        var total_width = 0, total_height = 0;
+        total_width  += values.values[0];
+        total_height += values.values[0];
+        //skip start point
+        for (var i = 1; i < values.values.length; i++) {
+
+        }
+
+        var maxr = Math.max.apply(Math, radiuses);
+        //scale up or down
+        if (maxr * 2 > height && opts.scaledown || maxr * 2 < height && opts.scaleup) {
+            var coef = height / (maxr * 2);
+            for (var i = 0; i < radiuses.length; i++) {
+                radiuses[i] = Math.floor( radiuses[i] * coef );
+            }
+        }
+
+        //convert percents of overlaps to pixels - we take percent of the smallest one
+        var ov = [], s, ovi;
+        for (var i = 0; i < radiuses.length-1; i++) {
+            ov[i] = [];
+            for (var j = i+1; j < radiuses.length; j++) {
+                s = radiuses[i] > radiuses[j] ? j : i;
+                ovi = values.overlaps[i][j-i-1];
+                ov[i][j-i-1] = radiuses[s] * (ovi > 1 ? ovi / 100 : ovi);
+            }
+        }
+
         var chart = paper.set(),
-          areas = paper.set(),
-          intersects = paper.set();
+            areas = paper.set(),
+            //0 for x, 1 for y
+            coords = [];
+        var radiuses = values.values.slice();
 
-        function lensArea(d, overlap) {
-            return 2 * Math.acos(d / 2) - d * Math.sqrt(4 - Math.pow(d, 2)) / 2 -
-              Math.PI * overlap;
+        //fill coords array with given count of radiuses
+        for (var i = 0; i < radiuses.length; i++) {
+            coords[i] = [];
+            coords[i][1] = cy + height / 2;
         }
+        //set A center first, find B center accordingly to intersection size TODO: move inside previous for
+        coords[0][0] = cx + radiuses[0];
+        coords[1][0] = cx + radiuses[0] + (radiuses[0] - ov[0][0] / 2) + (radiuses[1] - ov[0][0] / 2);
 
-        function dLensArea(d) {
-            return -2 / Math.sqrt(1 - Math.pow(d, 2) / 4) -
-              Math.sqrt(4 - Math.pow(d, 2)) / 2 + d /
-              Math.sqrt(4 - Math.pow(d, 2));
+        chart.areas = [];
+        //draw A and B
+        for (var i = 0; i < radiuses.length; i++) {
+            var area = paper.circle(coords[i][0],coords[i][1],radiuses[i])
+              .attr({ stroke: "white", "stroke-width" : "1", fill: opts.colors[i], opacity : opts.opacity[i] });
+            area.i = i;
+            area.x = coords[i][0];
+            area.y = coords[i][1];
+            area.value = values.values[i];
+            areas.push(area);
+            chart.areas[i] = area;
         }
-
-        // TODO: Implement 3-area Venn
-        var a0 = values.cardinalities[0],
-          a1 = values.cardinalities[1],
-          aI = values.overlaps[0],
-          r0 = Math.sqrt(a0 / Math.PI), // Get radii for area, unscaled
-          r1 = Math.sqrt(a1 / Math.PI),
-          overlap = aI / a0,
-          dnPrev = 0 - lensArea(0, overlap) / dLensArea(0), dn, // Initial guess
-          d, s;
-
-        // Find a distance d, so that the left circle area, the overlap area and
-        // the right circle area are proportional to the given values using
-        // Newton's method. We need many iterations to draw overlap == 0 correctly.
-        // See http://mathworld.wolfram.com/Circle-CircleIntersection.html for
-        // details on circle-circle-intersection.
-        for (var i = 1; i < 150; i++) {
-            dn = Math.max(dnPrev - lensArea(dnPrev, overlap) / dLensArea(dnPrev),
-              1e-14); // Clamp near zero to draw overlap == a0 correctly
-            dnPrev = dn;
-        }
-
-        // Scale to bounding box
-        s = width <= height ?
-          width / ( dn * r0 + 2 * r1 ) :
-          height / Math.max(r0, r1) / 2;
-        r0 *= s;
-        r1 *= s;
-        d = Math.max(dn * r0, 0) - r0 + r1;
-
-        // Calculate drawing parameters
-        var x0 = cx - (r1 - r0 + d) / 2,
-          y0 = cy,
-          x1 = x0 + d,
-          y1 = y0,
-          a = Math.sqrt((-d + r1 - r0) * (-d - r1 + r0) * (-d + r1 + r0) *
-            ( d + r1 + r0)) / d,
-          xi = (Math.pow(d, 2) - Math.pow(r1, 2) + Math.pow(r0, 2)) / (2 * d);
-        yi = a / 2;
-
-        function outline2(large0, sweep0, large1, sweep1) {
-            var res = paper.path([
-                "M", x0 + xi, y0 - yi,
-                "A", r0, r0, 0, large0, sweep0, x0 + xi, y0 + yi,
-                "A", r1, r1, 0, large1, sweep1, x0 + xi, y0 - yi,
-                "Z"
-            ]);
-            // TODO: Calculate middle x and middle y position
-            return res;
-        }
-
-        function renderParts(areas, intersects) {
-            Raphael.getColor.reset();
-            function colorAttr(i) {
-                return opts.gradients ? {gradient:opts.gradients[i]} : {
-                    fill:opts.colors ? opts.colors[i] : Raphael.getColor()};
-            }
-
-            areas.push(outline2(~~(xi > 0), 0, 0, 1).attr(colorAttr(0)));
-            areas.push(outline2(~~(xi <= 0), 1, 1, 0).attr(colorAttr(1)));
-            intersects.push(outline2(~~(xi <= 0), 1, 0, 1).attr(colorAttr(2)));
-
-            strokes = {stroke:opts.stroke || "#fff",
-                "stroke-width":opts.strokewidth == null ? 1 : opts.strokewidth};
-            areas.attr(strokes);
-            intersects.attr(strokes);
-        }
-
-        renderParts(areas, intersects);
-
-        function getCallbackContext(set) {
-            return {
-                set:set,
-                cx:cx,
-                cy:cy,
-                //mx: set.middle.x,
-                //my: set.middle.y,
-                values:values
-            };
-        }
-
-        chart.hover = function (fin, fout) {
-            fout = fout || function () {
-            };
-            function h(set) {
-                var o = getCallbackContext(set);
-                set.mouseover(function () {
-                    fin.call(o);
-                });
-                set.mouseout(function () {
-                    fout.call(o);
-                });
-            };
-            for (var i = 0; i < areas.length; i++) h(areas[i]);
-            for (var i = 0; i < intersects.length; i++) h(intersects[i]);
-            return this;
-        };
-
-        chart.click = function (f) {
-            function c(set) {
-                var o = getCallbackContext(set);
-                set.click(function () {
-                    f.call(o);
-                });
-            }
-
-            for (var i = 0; i < areas.length; i++) c(areas[i]);
-            for (var i = 0; i < intersects.length; i++) c(intersects[i]);
-            return this;
-        };
-
         chart.push(areas);
-        chart.push(intersects);
-        chart.areas = areas;
-        chart.intersects = intersects;
+
+        //set holder position
+        if (typeof window.jQuery != 'undefined') {
+            chart.holder = jQuery(paper.canvas).parent();
+            chart.holderPosition = chart.holder.position();
+        } else {
+            chart.holder = paper.canvas.parentNode;
+            chart.holderPosition = {left : chart.holder.offsetLeft, top : chart.holder.offsetTop};
+        }
+
+        chart.fin = function fin() {
+            //console.log('fin');
+            if (opts.hoverscalesize) {
+                var d = this.attrs.r * 2;
+                var s = (opts.hoverscalesize / d);
+                this.stop().animate( { transform: "s" +  (1 + s) }, 500, "elastic");
+            }
+            if (!this.valuepopup) {
+                this.valuepopup = paper.set();
+                this.valuepopup.push(paper.text(this.x, this.y, this.value).attr({fill: 'white'}));
+                this.valuepopup.push(this.valuepopup[0].blob());
+            }
+            this.valuepopup.show();
+        }
+
+        chart.fout = function fout() {
+            //console.log('fout');
+            if (opts.hoverscalesize) this.stop().animate({transform: ""}, 500, "elastic");
+            if (this.valuepopup) this.valuepopup.hide();
+        }
+
+        chart.mousemove = function(e){
+            var areas = chart.areas.slice(0);
+            //fix coords
+            var x = e.pageX-chart.holderPosition.left;
+            var y = e.pageY-chart.holderPosition.top;
+            //find all points under cursor
+            var els = paper.getElementsByPoint(x, y);
+            if (els.length) {
+                //show elements in focus
+                var circles = [];
+                for (var i=0; i < els.length; i++) {
+                    if (els[i].type == 'circle') {
+                        circles.push(els[i]);
+                    }
+                }
+                //going backwards so every element of areas have correct index
+                if (circles.length) for (var i=circles.length-1; i >= 0; i--) {
+                    areas.splice(circles[i].i,1);
+                    chart.fin.apply(circles[i]);
+                }
+            }
+            //hide non-focused elements
+            if (areas.length) {
+                for (var i=0; i < areas.length; i++) {
+                    chart.fout.apply(areas[i]);
+                }
+            }
+        }
+
         return chart;
     };
 
     //inheritance
     var F = function () {};
     F.prototype = Raphael.g;
-    Venn.prototype = new F;
+    VennChart.prototype = new F;
 
     //public
-    Raphael.fn.venn = function (cx, cy, width, height, values, opts) {
-        return new Venn(this, cx, cy, width, height, values, opts);
+    Raphael.fn.vennchart = function (cx, cy, width, height, values, opts) {
+        return new VennChart(this, cx, cy, width, height, values, opts);
     }
 
 })();
