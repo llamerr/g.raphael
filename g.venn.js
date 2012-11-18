@@ -10,6 +10,8 @@
  */
 
 (function () {
+    var PI180 = Math.PI/180;
+    function deg2rad(deg) { return deg * PI180; }
 
     /**
      *
@@ -58,7 +60,7 @@
         }
 
         /** BUILD CONFIGURATION **/
-        //[ [x,y], [angle,overlap], [angle,overlap], ... ] - x,y here is relative percent of paper
+        //[ [angle,overlap], [angle,overlap], ... ] - x,y here is relative percent of paper
         var conf;
         if (typeof opts.conf != 'undefined') {
             conf = opts.conf;
@@ -82,12 +84,26 @@
         }
 
         //calculate width and height of configuration
-        var total_width = 0, total_height = 0;
-        total_width  += values.values[0];
-        total_height += values.values[0];
+        var total_width = 0, total_height = 0, nextx = 0, nexty = 0, thisx = 0, thisy = 0, s;
+        total_width  += values.values[0] * 2;
+        total_height += values.values[0] * 2;
         //skip start point
-        for (var i = 1; i < values.values.length; i++) {
-
+        for (var i = 0; i < conf.length; i++) {
+            //second value is overlap of smallest area
+            s = values.values[i] > values.values[i+1] ? 1 : 0;
+            thisx = nextx; thisy = nexty;
+            //calculate next position according to direction and radiuses/overlap - see docs/g.venn1.png
+            nextx += Math.cos(deg2rad(conf[i][0])) * (values.values[i+1] - conf[i][1] * values.values[s]);
+            nexty += Math.sin(deg2rad(conf[i][0])) * (values.values[i+1] - conf[i][1] * values.values[s]);
+            //add one more radius to total width & height from next point
+            if (thisx + values.values[i] < nextx + values.values[i+1]) {
+                something
+            }
+            if (thisx + values.values[i] > nextx + values.values[i+1]) {
+                something
+            }
+            something
+            //total_width +=
         }
 
         var maxr = Math.max.apply(Math, radiuses);
