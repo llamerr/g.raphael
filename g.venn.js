@@ -6,12 +6,14 @@
  * Licensed under the MIT (http://www.opensource.org/licenses/mit-license.php)
  * license.
  *
- * Author: Christian Blichmann <christian.blichmann@zynamics.com>
+ * Author: Alexey Lukin <llamerr@gmail.com>
  */
 
 (function () {
     var PI180 = Math.PI/180;
-    function deg2rad(deg) { return deg * PI180; }
+    function deg2rad(deg) {return deg * PI180;}
+    function sin(deg) {return Math.sin(deg2rad(deg)).toFixed(15);}
+    function cos(deg) {return Math.cos(deg2rad(deg)).toFixed(15);}
 
     /**
      *
@@ -27,9 +29,6 @@
      */
     function VennChart(paper, cx, cy, width, height, values, opts) {
         /** CHECK VALUES AND OPTS **/
-        //[ [12] ]
-        //[ [12, 13], [23] ]
-        //[ [12, 13, 14], [23, 24], [34] ]
         if (typeof values.overlaps == 'undefined') {
             values.overlaps = [];
             for (var i = 0; i < values.values.length-1; i++) {
@@ -58,6 +57,8 @@
                 if (typeof opts.opacity[i] == 'undefined') opts.opacity[i] = 0.75;
             }
         }
+        //set empty titles array
+        if (typeof opts.titles == 'undefined') opts.titles = [];
 
         /** BUILD CONFIGURATION **/
         //[ [angle,overlap], [angle,overlap], ... ] - x,y here is relative percent of paper
@@ -77,81 +78,85 @@
                 var maxh = Math.max.apply(Math, values.values);
                 var maxw = values.values[0] + values.values[1] - values.values[s] * values.overlaps[0][0];
             } else if (values.values.length == 3) {
-                throw { message : 'Not implemented yet.' }
+                throw { message : 'Not implemented yet. You must pass conf for charts with more then 2 areas.' }
             } else {
                 throw { message : 'You must pass conf for charts with more then 3 areas.' }
             }
         }
 
-        //calculate width and height of configuration
-        var total_width = 0, total_height = 0, nextx = 0, nexty = 0, thisx = 0, thisy = 0, s;
+        /** CALCULATE WIDTH AND HEIGHT OF CONFIGURATION **/
+        var total_width = 0, total_height = 0,
+            thisx = 0, thisy = 0,
+            nextx = 0, nexty = 0,
+            lastx = 0, lasty = 0,
+            thisleftx = 0, thisrightx = 0, thistopy = 0, thisboty = 0,
+            nextleftx = 0, nextrightx = 0, nexttopy = 0, nextboty = 0,
+            s;
+
         total_width  += values.values[0] * 2;
         total_height += values.values[0] * 2;
-        //skip start point
         for (var i = 0; i < conf.length; i++) {
-            //second value is overlap of smallest area
-            s = values.values[i] > values.values[i+1] ? 1 : 0;
             thisx = nextx; thisy = nexty;
+            thisleftx  = thisx - values.values[i];
+            thisrightx = thisx + values.values[i];
+            thistopy   = thisy - values.values[i];
+            thisboty   = thisy + values.values[i];
+            //second value is overlap of smallest area
+            s = values.values[i] > values.values[i+1] ? i+1 : i;
             //calculate next position according to direction and radiuses/overlap - see docs/g.venn1.png
-            nextx += Math.cos(deg2rad(conf[i][0])) * (values.values[i+1] - conf[i][1] * values.values[s]);
-            nexty += Math.sin(deg2rad(conf[i][0])) * (values.values[i+1] - conf[i][1] * values.values[s]);
-            //add one more radius to total width & height from next point
-            if (thisx + values.values[i] < nextx + values.values[i+1]) {
-                something
-            }
-            if (thisx + values.values[i] > nextx + values.values[i+1]) {
-                something
-            }
-            something
-            //total_width +=
+            nextx += cos(conf[i][0]) * (values.values[i] + values.values[i+1] - conf[i][1] * values.values[s]);
+            nexty += sin(conf[i][0]) * (values.values[i] + values.values[i+1] - conf[i][1] * values.values[s]);
+            nextleftx  = nextx - values.values[i+1];
+            nextrightx = nextx + values.values[i+1];
+            nexttopy   = nexty - values.values[i+1];
+            nextboty   = nexty + values.values[i+1];
+            //find out how much our sizes changed - see docs/g.venn2.png
+            //compare bot y of both - new bot lower(higher value) then prev
+            if ( thisboty < nextboty) total_height += Math.abs(nextboty - thisboty);
+            //compare top y of both - new top higher(lower value) then prev
+            if (thistopy > nexttopy) total_height += Math.abs(thisboty - nextboty);
+            //compare left x of both - new left is lefter(lower value) then prev
+            if ( thisleftx > nextleftx) total_width += Math.abs(thisleftx - nextleftx);
+            //compare right x of both - new rigth is righter(higher value) then prev
+            if (thisrightx < nextrightx) total_width += Math.abs(nextrightx - thisrightx);
         }
-
-        var maxr = Math.max.apply(Math, radiuses);
-        //scale up or down
-        if (maxr * 2 > height && opts.scaledown || maxr * 2 < height && opts.scaleup) {
-            var coef = height / (maxr * 2);
-            for (var i = 0; i < radiuses.length; i++) {
-                radiuses[i] = Math.floor( radiuses[i] * coef );
-            }
-        }
-
-        //convert percents of overlaps to pixels - we take percent of the smallest one
-        var ov = [], s, ovi;
-        for (var i = 0; i < radiuses.length-1; i++) {
-            ov[i] = [];
-            for (var j = i+1; j < radiuses.length; j++) {
-                s = radiuses[i] > radiuses[j] ? j : i;
-                ovi = values.overlaps[i][j-i-1];
-                ov[i][j-i-1] = radiuses[s] * (ovi > 1 ? ovi / 100 : ovi);
-            }
-        }
+        lastx = nextx; lasty = nexty;
+        //console.log('lastxy',lastx,lasty);
+        //console.log('total',total_width,total_height);
 
         var chart = paper.set(),
-            areas = paper.set(),
-            //0 for x, 1 for y
-            coords = [];
+            areas = paper.set();
         var radiuses = values.values.slice();
 
-        //fill coords array with given count of radiuses
-        for (var i = 0; i < radiuses.length; i++) {
-            coords[i] = [];
-            coords[i][1] = cy + height / 2;
-        }
-        //set A center first, find B center accordingly to intersection size TODO: move inside previous for
-        coords[0][0] = cx + radiuses[0];
-        coords[1][0] = cx + radiuses[0] + (radiuses[0] - ov[0][0] / 2) + (radiuses[1] - ov[0][0] / 2);
+         //scale up or down
+         if ( ((total_width > width || total_height > height) && opts.scaledown)
+             || (total_width < width && total_height < height && opts.scaleup) ) {
+             var coef = height / (maxr * 2);
+             for (var i = 0; i < radiuses.length; i++) {
+                radiuses[i] = Math.floor( radiuses[i] * coef );
+             }
+         }
 
+        var x = 0 - lastx, y = 0 - lasty;
+        var midx = width / 2, midy = height / 2;
         chart.areas = [];
-        //draw A and B
+        //draw areas
         for (var i = 0; i < radiuses.length; i++) {
-            var area = paper.circle(coords[i][0],coords[i][1],radiuses[i])
+            //console.log(midx + x,midy + y,radiuses[i]);
+            var area = paper.circle(midx + x,midy + y,radiuses[i])
               .attr({ stroke: "white", "stroke-width" : "1", fill: opts.colors[i], opacity : opts.opacity[i] });
             area.i = i;
-            area.x = coords[i][0];
-            area.y = coords[i][1];
+            area.x = midx + x;
+            area.y = midy + y;
             area.value = values.values[i];
+            area.title = opts.titles[i] ? opts.titles[i] : '';
             areas.push(area);
             chart.areas[i] = area;
+            //move to next point if any
+            if (i == conf.length) continue;
+            s = radiuses[i] > radiuses[i+1] ? i+1 : i;
+            x += cos(conf[i][0]) * (radiuses[i] + radiuses[i+1] - conf[i][1] * radiuses[s]);
+            y += sin(conf[i][0]) * (radiuses[i] + radiuses[i+1] - conf[i][1] * radiuses[s]);
         }
         chart.push(areas);
 
@@ -173,7 +178,7 @@
             }
             if (!this.valuepopup) {
                 this.valuepopup = paper.set();
-                this.valuepopup.push(paper.text(this.x, this.y, this.value).attr({fill: 'white'}));
+                this.valuepopup.push(paper.text(this.x, this.y, (this.title ? this.title+':\n' : '' ) + this.value).attr({fill: 'white'}));
                 this.valuepopup.push(this.valuepopup[0].blob());
             }
             this.valuepopup.show();
