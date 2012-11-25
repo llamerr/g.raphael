@@ -4,26 +4,28 @@
   <meta charset="utf-8">
   <title>Raphael Venn Chart</title>
   <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js" type="text/javascript"></script>
-  <script src="../raphael.js" type="text/javascript"></script>
+  <script src="../raphael-min.js" type="text/javascript"></script>
   <script src="../g.raphael.js" type="text/javascript"></script>
   <script src="../g.venn.js" type="text/javascript"></script>
   <script type="text/javascript">
     $(document).ready(function () {
 
-        var r = [];
-        var order = [1,5,2,3,4,6,7,8,9]
-        for (var i = 1; i<=9;i++) {
-          r[i] = Raphael("holder"+i,300,300);
-          r[i].vennchart(50, 20, 300, 300, { values: [150,50,50] }, { conf: [ [0+45*(order[i-1]-1), 0], [0+45*(order[i-1]-1), 0] ] });
-        }
-        //venn = r.vennchart(50, 20, 600, 400, { values: [50, 100, 75, 60, 130, 55] }, { conf : [ [180, 0.5], [180, 0.5], [270+45, 0.5], [15, 0.5], [90+30, 0.5] ] });
+        //var r = [];
+        //var order = [1,2,3,4,5,6,7,8,9]
+        //for (var i = 1; i<=9;i++) {
+        //  r[i] = Raphael("holder"+i,300,300);
+        //  r[i].vennchart(50, 20, 300, 300, { values: [150,50,50] }, { conf: [ [0+45*(order[i-1]-1), 0], [0+45*(order[i-1]-1), 0] ] });
+        //}
+        r = Raphael("holder",400,400);
+        //venn = r.vennchart(50, 20, 400, 400, { values: [50, 100, 75, 60, 130, 55] }, { conf : [ [180, 0.5], [180, 0.5], [270+45, 0.5], [15, 0.5], [90+30, 0.5] ] });
         //venn = r.vennchart(50, 20, 400, 400, { values: [60,30,40,20,50,30] }, { conf: [ [0, 0], [-90, 0.5], [180, 0.7], [180+45, 0.3], [180-30, 1] ], titles: ['A', 'and B', 'C', 'd', 'e','f'] });
         //venn = r.vennchart(50, 20, 400, 400, { values: [100,50,50] }, { conf: [ [0, 0], [0, 0] ] });
         //venn = r.vennchart(50, 20, 400, 400, { values: [100,100] }, { conf: [ [0, 0] ], titles: ['A', 'B'] });
         //venn = r.vennchart(50, 20, 400, 400, { values: [150,50] }, { conf: [ [0, 0] ], titles: ['A', 'B'] });
         //venn = r.vennchart(50, 20, 400, 400, { values: [100] }, { conf: [ ] });
         //venn = r.vennchart(50, 20, 400, 400, { values: [100,20,20,20,20] }, { conf: [ [0, 0.5], [-90-45, -5.8], [180-45, -5.8], [90-45, -5.8] ] });
-        //jQuery(r.canvas).mousemove(venn.mousemove);
+        venn = r.vennchart(50, 20, 400, 400, { values: [100, 40], overlaps: [0.7] });
+        jQuery(r.canvas).mousemove(venn.mousemove);
 
     });
   </script>
@@ -31,6 +33,7 @@
 <body class="raphael">
 <h1>TEST</h1>
 <p>asdfasdf asdf asdf asdf asdfasdf</p>
+<div id="holder" style="width: 402px; height: 402px; border: 1px solid black; float: left;"></div>
 <div id="holder1" style="width: 301px; height: 301px; border: 1px solid black; float: left;"></div>
 <div id="holder2" style="width: 301px; height: 301px; border: 1px solid black; float: left;"></div>
 <div id="holder3" style="width: 301px; height: 301px; border: 1px solid black; float: left;"></div>

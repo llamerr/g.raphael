@@ -22,14 +22,15 @@
      * @param cy
      * @param width
      * @param height
-     * @param values { values : [a,b], overlaps : [ab] }
-     * @param opts { colors : [a,b], opacity : [a,b] }
+     * @param values { values: [a,b], overlaps: [ab] }
+     * @param opts { colors: [a,b], opacity: [a,b], scaledown: true, scaleup: true, hoverscalesize: 10  }
      * @return {*}
      * @constructor
      */
     function VennChart(paper, cx, cy, width, height, values, opts) {
-        console.log(' ');
-        console.log($(paper.canvas).parent().attr('id'));
+        //console.log(' ');
+
+        //console.log($(paper.canvas).parent().attr('id'));
         /** CHECK VALUES AND OPTS **/
         if (typeof values.overlaps == 'undefined') {
             values.overlaps = [];
@@ -40,8 +41,7 @@
                 }
             }
         }
-        //console.log(values.values);
-        //console.log(values.overlaps);
+        //console.log(values.values); console.log(values.overlaps);
         opts = opts || {};
         if (typeof opts.scaledown == 'undefined') opts.scaledown = true;
         if (typeof opts.scaleup == 'undefined') opts.scaleup = true;
@@ -71,15 +71,10 @@
         } else {
             conf = [];
             //place at the center of the paper
-            if (values.values.length == 1) {
-                conf.push([width / 2, height / 2]);
-            }
+            if (values.values.length == 1) {}
             //place one next to other
             else if (values.values.length == 2) {
-                var s = values.values[0] > values.values[1] ? 1 : 0;
-
-                var maxh = Math.max.apply(Math, values.values);
-                var maxw = values.values[0] + values.values[1] - values.values[s] * values.overlaps[0][0];
+                conf.push([0,0.5]);
             } else if (values.values.length == 3) {
                 throw { message : 'Not implemented yet. You must pass conf for charts with more then 2 areas.' }
             } else {
@@ -92,29 +87,24 @@
         var total_width = 0, total_height = 0,
             thisx = 0, thisy = 0,
             nextx = 0, nexty = 0,
-            lastx = 0, lasty = 0,
             thisleftx = 0, thisrightx = 0, thistopy = 0, thisboty = 0,
             nextleftx = 0, nextrightx = 0, nexttopy = 0, nextboty = 0,
-            prevtw, prevth, wdiff, hdiff,
             s;
 
         total_width  += values.values[0] * 2;
         total_height += values.values[0] * 2;
-        var leftx = -values.values[0], rightx = values.values[0], topy = -values.values[0], boty = values.values[0],
-        prevtw = total_width; prevth = total_height;
-        wdiff = prevtw - total_width; hdiff = prevth - total_height;
+        var leftx = -values.values[0], rightx = values.values[0], topy = -values.values[0], boty = values.values[0];
         for (var i = 0; i < conf.length; i++) {
 
             thisx = nextx; thisy = nexty;
             thisleftx  = thisx - values.values[i];thisrightx = thisx + values.values[i];
             thistopy   = thisy - values.values[i];thisboty   = thisy + values.values[i];
-            prevtw = total_width; prevth = total_height;
             //console.log('thisxy',thisx, thisy);
 
             //second value is overlap of smallest area
             s = values.values[i] > values.values[i+1] ? i+1 : i;
 
-            //calculate next position according to direction and radiuses/overlap - see docs/g.venn1.png
+            //calculate next position according to direction and values.values/overlap - see docs/g.venn1.png
             nextx += cos(conf[i][0]) * (values.values[i] + values.values[i+1] - conf[i][1] * values.values[s]);
             nexty += sin(conf[i][0]) * (values.values[i] + values.values[i+1] - conf[i][1] * values.values[s]);
             nextleftx  = nextx - values.values[i+1];nextrightx = nextx + values.values[i+1];
@@ -143,54 +133,49 @@
                 rightx = nextrightx;
             }
 
-            wdiff = prevtw - total_width; hdiff = prevth - total_height;
-            //console.log('inside:whdiff',wdiff, hdiff)
         }
-        lastx = nextx; lasty = nexty;
-        console.log('lastxy',lastx,lasty);
-        console.log('whdiff',wdiff,hdiff);
-        console.log('total',total_width,total_height);
+        //console.log('total',total_width,total_height);
 
         var chart = paper.set(),
             areas = paper.set();
-        var radiuses = values.values.slice();
 
         var sc = 1;
+        total_width += opts.hoverscalesize;
+        total_height += opts.hoverscalesize;
         //scale up or down
         if ( (total_width > width || total_height > height) && opts.scaledown
             || total_width < width && total_height < height && opts.scaleup) {
-            sc = Math.min( width / total_width, height / total_height );
+            sc = Math.min( width/total_width, height/total_height );
         }
-        console.log('coef',sc);
+        //console.log('coef',sc);
+        //console.log('whc', width / total_width, height / total_height);
 
         var midx = width / 2, midy = height / 2;
-        console.log('mid',midx,midy);
-        var x = midx - (lastx ? (total_width + lastx) : 0)*sc,
-            y = midy - (lasty ? (total_height + lasty) : 0)*sc,
+        //console.log('mid',midx,midy);
+        var x = midx - (leftx + (rightx - leftx)/2)*sc,
+            y = midy - (topy + (boty - topy)/2)*sc,
             rx, ry;
-        //debugger;
-        console.log('sxy',x,y);
-        //debugger;
+        //console.log('sxy',x,y);
         chart.areas = [];
         //draw areas
-        for (var i = 0; i < radiuses.length; i++) {
+        for (var i = 0; i < values.values.length; i++) {
             rx = x; ry = y;
-            var area = paper.circle(rx,ry,radiuses[i] * sc)
+            var area = paper.circle(rx,ry,values.values[i] * sc)
               .attr({ stroke: "white", "stroke-width" : "1", fill: opts.colors[i], opacity : opts.opacity[i] });
             area.i = i;
             area.x = rx;
             area.y = ry;
-            //console.log('xyr',area.x,area.y,radiuses[i] * sc)
+            //console.log('xyr',area.x,area.y,values.values[i] * sc)
             area.value = values.values[i];
             area.title = opts.titles[i] ? opts.titles[i] : '';
             areas.push(area);
             chart.areas[i] = area;
             //move to next point if any
             if (i == conf.length) continue;
-            s = radiuses[i] > radiuses[i+1] ? i+1 : i;
-            x += cos(conf[i][0]) * (radiuses[i] + radiuses[i+1] - conf[i][1] * radiuses[s]) * sc;
-            y += sin(conf[i][0]) * (radiuses[i] + radiuses[i+1] - conf[i][1] * radiuses[s]) * sc;
-        }0
+            s = values.values[i] > values.values[i+1] ? i+1 : i;
+            x += cos(conf[i][0]) * (values.values[i] + values.values[i+1] - conf[i][1] * values.values[s]) * sc;
+            y += sin(conf[i][0]) * (values.values[i] + values.values[i+1] - conf[i][1] * values.values[s]) * sc;
+        }
         chart.push(areas);
 
         //set holder position
