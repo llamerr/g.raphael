@@ -41,7 +41,7 @@
                 }
             }
         }
-        //console.log(values.values); console.log(values.overlaps);
+        console.log(values.values); console.log(values.overlaps);
         opts = opts || {};
         if (typeof opts.scaledown == 'undefined') opts.scaledown = true;
         if (typeof opts.scaleup == 'undefined') opts.scaleup = true;
@@ -74,9 +74,22 @@
             if (values.values.length == 1) {}
             //place one next to other
             else if (values.values.length == 2) {
-                conf.push([0,0.5]);
+
+                conf.push([0,values.overlaps[0][0]]);
+
             } else if (values.values.length == 3) {
-                throw { message : 'Not implemented yet. You must pass conf for charts with more then 2 areas.' }
+
+                //overlaps used as binary data here
+                var AB, BC, AC;
+                if (values.overlaps[0][0] > 0) AB = 1;
+                if (values.overlaps[0][1] > 0) AC = 1;
+                if (values.overlaps[1][0] > 0) BC = 1;
+                if (!AB && !BC && !AC) {
+
+                } else if (AB && BC && AC) {
+                    conf.push([0,0.5]);
+                }
+
             } else {
                 throw { message : 'You must pass conf for charts with more then 3 areas.' }
             }

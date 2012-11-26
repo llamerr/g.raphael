@@ -24,9 +24,16 @@
         //venn = r.vennchart(50, 20, 400, 400, { values: [150,50] }, { conf: [ [0, 0] ], titles: ['A', 'B'] });
         //venn = r.vennchart(50, 20, 400, 400, { values: [100] }, { conf: [ ] });
         //venn = r.vennchart(50, 20, 400, 400, { values: [100,20,20,20,20] }, { conf: [ [0, 0.5], [-90-45, -5.8], [180-45, -5.8], [90-45, -5.8] ] });
-        venn = r.vennchart(50, 20, 400, 400, { values: [100, 40], overlaps: [0.7] });
-        jQuery(r.canvas).mousemove(venn.mousemove);
-
+        venn = r.vennchart(50, 20, 400, 400, { values: [100, 40] });
+        //jQuery(r.canvas).mousemove(venn.mousemove);
+        var start = function () {
+          this.ox = this.attr("cx");
+          this.oy = this.attr("cy");
+        },
+        move = function (dx, dy) {
+          this.attr({cx: this.ox + dx, cy: this.oy + dy});
+        };
+        venn.drag(move,start);
     });
   </script>
 </head>
