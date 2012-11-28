@@ -27,23 +27,22 @@
         venn = r.vennchart(50, 20, 400, 400, { values: [100, 40] });
         jQuery(r.canvas).mousemove(venn.mousemove);
         var start = function () {
+          if (typeof this.ox == 'undefined') this.sx = this.attr("cx");
           this.ox = this.attr("cx");
+          if (typeof this.oy == 'undefined') this.sy = this.attr("cy");
           this.oy = this.attr("cy");
           this.ismoving = true;
           this.valuepopup.hide()
         },
         end = function () {
-          this.attr({x: this.attr('cx'), y: this.attr('cy')});
-          console.log(this.ox,this.attr('cx'),this.attr('x'))
+            this.valuepopup.forEach(function(t){return function(el){
+                if (el.node.nodeName == 'path') el.transform('t'+parseInt(t.attr('cx') - t.sx)+','+parseInt(t.attr('cy') - t.sy));
+                else el.attr({x: t.attr('cx'), y: t.attr('cy')})
+            }}(this));
           this.ismoving = false;
         },
         move = function (dx, dy) {
           this.attr({cx: this.ox + dx, cy: this.oy + dy});
-          this.valuepopup.forEach(function(t){return function(el){
-            el.attr({x: t.attr('x'), y: t.attr('y')});
-            el.transform('t'+parseInt(t.ox + dx)+','+parseInt(t.oy + dy));
-            snode = el;console.log(el);
-          }}(this));
         };
         venn.drag(move,start,end);
     });
