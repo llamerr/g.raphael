@@ -41,11 +41,16 @@
                 }
             }
         }
+        //convert values to numeric
+        for (var i =0; i < values.values.length; i++) {
+            values.values[i] = parseFloat(values.values[i]);
+        }
         console.log(values.values); console.log(values.overlaps);
         opts = opts || {};
         if (typeof opts.scaledown == 'undefined') opts.scaledown = true;
         if (typeof opts.scaleup == 'undefined') opts.scaleup = true;
         if (typeof opts.hoverscalesize == 'undefined') opts.hoverscalesize = 10;
+        if (typeof opts.positionrecalc == 'undefined') opts.positionrecalc = false;
         //set colors if not set
         if (typeof opts.colors == 'undefined' || opts.colors.length < values.values.length) {
             if (typeof opts.colors == 'undefined') opts.colors = [];
@@ -79,6 +84,7 @@
 
             } else if (values.values.length == 3) {
 
+                throw { message : 'You must pass conf for charts with more then 2 areas.' }
                 //overlaps used as binary data here
                 var AB, BC, AC;
                 if (values.overlaps[0][0] > 0) AB = 1;
@@ -91,7 +97,7 @@
                 }
 
             } else {
-                throw { message : 'You must pass conf for charts with more then 3 areas.' }
+                throw { message : 'You must pass conf for charts with more then 2 areas.' }
             }
         }
         //console.log(conf);
@@ -191,14 +197,23 @@
         }
         chart.push(areas);
 
-        //set holder position
-        if (typeof window.jQuery != 'undefined') {
-            chart.holder = jQuery(paper.canvas).parent();
-            chart.holderPosition = chart.holder.position();
-        } else {
-            chart.holder = paper.canvas.parentNode;
-            chart.holderPosition = {left : chart.holder.offsetLeft, top : chart.holder.offsetTop};
+        //you may want to recalculate holder position after doing changes
+        chart.setHolderPosition = function setHolderPosition(){
+            if (typeof window.jQuery != 'undefined') {
+                chart.holder = jQuery(paper.canvas).parent();
+                chart.holderPosition = chart.holder.offset();
+            } else if (typeof window.Prototype != 'undefined') {
+                chart.holder = paper.canvas.parentNode;
+                var offset =  chart.holder.cumulativeOffset();
+                chart.holderPosition = {left : offset.left, top : offset.top};
+            } else {
+                chart.holder = paper.canvas.parentNode;
+                chart.holderPosition = {left : chart.holder.offsetLeft, top : chart.holder.offsetTop};
+            }
         }
+        //set holder position
+        chart.setHolderPosition();
+        chart.ismoving = false;
 
         chart.fin = function fin() {
             //console.log('fin');
@@ -207,12 +222,13 @@
                 var s = (opts.hoverscalesize / d);
                 this.stop().animate( { transform: "s" +  (1 + s) }, 500, "elastic");
             }
+
             if (!this.valuepopup) {
                 this.valuepopup = paper.set();
                 this.valuepopup.push(paper.text(this.x, this.y, (this.title ? this.title+':\n' : '' ) + this.value).attr({fill: 'white'}));
                 this.valuepopup.push(this.valuepopup[0].blob());
             }
-            this.valuepopup.show();
+            if ( ! this.ismoving) this.valuepopup.show();
         }
 
         chart.fout = function fout() {
@@ -222,6 +238,7 @@
         }
 
         chart.mousemove = function(e){
+            if (opts.positionrecalc) chart.setHolderPosition();
             var areas = chart.areas.slice(0);
             //fix coords
             var x = e.pageX-chart.holderPosition.left;

@@ -25,15 +25,27 @@
         //venn = r.vennchart(50, 20, 400, 400, { values: [100] }, { conf: [ ] });
         //venn = r.vennchart(50, 20, 400, 400, { values: [100,20,20,20,20] }, { conf: [ [0, 0.5], [-90-45, -5.8], [180-45, -5.8], [90-45, -5.8] ] });
         venn = r.vennchart(50, 20, 400, 400, { values: [100, 40] });
-        //jQuery(r.canvas).mousemove(venn.mousemove);
+        jQuery(r.canvas).mousemove(venn.mousemove);
         var start = function () {
           this.ox = this.attr("cx");
           this.oy = this.attr("cy");
+          this.ismoving = true;
+          this.valuepopup.hide()
+        },
+        end = function () {
+          this.attr({x: this.attr('cx'), y: this.attr('cy')});
+          console.log(this.ox,this.attr('cx'),this.attr('x'))
+          this.ismoving = false;
         },
         move = function (dx, dy) {
           this.attr({cx: this.ox + dx, cy: this.oy + dy});
+          this.valuepopup.forEach(function(t){return function(el){
+            el.attr({x: t.attr('x'), y: t.attr('y')});
+            el.transform('t'+parseInt(t.ox + dx)+','+parseInt(t.oy + dy));
+            snode = el;console.log(el);
+          }}(this));
         };
-        venn.drag(move,start);
+        venn.drag(move,start,end);
     });
   </script>
 </head>
