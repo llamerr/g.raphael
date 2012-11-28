@@ -267,6 +267,11 @@
             }
         }
 
+        //get changed config after doing moving
+        chart.getconfig = function() {
+
+        }
+
         return chart;
     };
 
